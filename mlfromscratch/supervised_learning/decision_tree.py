@@ -47,7 +47,7 @@ class DecisionTree(object):
     """
     def __init__(self, min_samples_split=2, min_impurity=1e-7,
                  max_depth=float("inf"), loss=None):
-        self.root = None  # Root node in dec. tree
+        self.root = None  # Root node in decision tree
         # Minimum n of samples to justify split
         self.min_samples_split = min_samples_split
         # The minimum impurity to justify split
@@ -79,13 +79,18 @@ class DecisionTree(object):
 
         # Check if expansion of y is needed
         if len(np.shape(y)) == 1:
+            # y在这里变成了列向量 m*1
+            # https://blog.csdn.net/weixin_41004352/article/details/103711288
             y = np.expand_dims(y, axis=1)
 
         # Add y as last column of X
+        # m*n axis=1代表在n增加的方向拼接
+        # https://blog.csdn.net/qq_35037684/article/details/107882261
         Xy = np.concatenate((X, y), axis=1)
 
         n_samples, n_features = np.shape(X)
 
+        # 树的实际最大深度是self.max_depth+2
         if n_samples >= self.min_samples_split and current_depth <= self.max_depth:
             # Calculate the impurity for each feature
             for feature_i in range(n_features):
@@ -252,6 +257,7 @@ class RegressionTree(DecisionTree):
         self._impurity_calculation = self._calculate_variance_reduction
         self._leaf_value_calculation = self._mean_of_y
         super(RegressionTree, self).fit(X, y)
+
 
 class ClassificationTree(DecisionTree):
     def _calculate_information_gain(self, y, y1, y2):

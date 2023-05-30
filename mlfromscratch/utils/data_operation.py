@@ -48,6 +48,7 @@ def euclidean_distance(x1, x2):
 
 def accuracy_score(y_true, y_pred):
     """ Compare y_true to y_pred and return the accuracy """
+    # axis=0表示对每一列求和
     accuracy = np.sum(y_true == y_pred, axis=0) / len(y_true)
     return accuracy
 
