@@ -7,8 +7,8 @@ from mlfromscratch.utils import train_test_split, standardize, accuracy_score
 from mlfromscratch.utils import mean_squared_error, calculate_variance, Plot
 from mlfromscratch.supervised_learning import RegressionTree
 
-def main():
 
+def main():
     print ("-- Regression Tree --")
 
     # Load temperature data

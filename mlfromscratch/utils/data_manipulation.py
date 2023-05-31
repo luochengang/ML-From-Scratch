@@ -28,16 +28,22 @@ def batch_iterator(X, y=None, batch_size=64):
 def divide_on_feature(X, feature_i, threshold):
     """ Divide dataset based on if sample value on feature index is larger than
         the given threshold """
-    split_func = None
+    trueX = []
+    falseX = []
     if isinstance(threshold, int) or isinstance(threshold, float):
-        split_func = lambda sample: sample[feature_i] >= threshold
+        for x in X:
+            if x[feature_i] >= threshold:
+                trueX.append(x)
+            else:
+                falseX.append(x)
     else:
-        split_func = lambda sample: sample[feature_i] == threshold
+        for x in X:
+            if x[feature_i] == threshold:
+                trueX.append(x)
+            else:
+                falseX.append(x)
 
-    X_1 = np.array([sample for sample in X if split_func(sample)])
-    X_2 = np.array([sample for sample in X if not split_func(sample)])
-
-    return np.array([X_1, X_2])
+    return np.array([np.array(trueX), np.array(falseX)])
 
 
 def polynomial_features(X, degree):

@@ -4,14 +4,21 @@ import math
 import sys
 
 
+def get_proportion(val, y) -> int:
+    cnt = 0
+    for e in y:
+        if e == val:
+            cnt += 1
+    return cnt / len(y)
+
+
 def calculate_entropy(y):
     """ Calculate the entropy of label array y """
     log2 = lambda x: math.log(x) / math.log(2)
     unique_labels = np.unique(y)
     entropy = 0
     for label in unique_labels:
-        count = len(y[y == label])
-        p = count / len(y)
+        p = get_proportion(label, y)
         entropy += -p * log2(p)
     return entropy
 
@@ -22,10 +29,13 @@ def mean_squared_error(y_true, y_pred):
     return mse
 
 
+# least-squares loss
 def calculate_variance(X):
     """ Return the variance of the features in dataset X """
     mean = np.ones(np.shape(X)) * X.mean(0)
     n_samples = np.shape(X)[0]
+    # x.dot(y) 矩阵乘法
+    # x.T x的转置
     variance = (1 / n_samples) * np.diag((X - mean).T.dot(X - mean))
     
     return variance

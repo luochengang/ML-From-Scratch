@@ -69,7 +69,7 @@ class DecisionTree(object):
         self.root = self._build_tree(X, y)
         self.loss=None
 
-    def _build_tree(self, X, y, current_depth=0):
+    def _build_tree(self, X, y, current_depth=0) -> DecisionNode:
         """ Recursive method which builds out the decision tree and splits X and respective y
         on the feature of X which (based on impurity) best separates the data"""
 
@@ -91,40 +91,48 @@ class DecisionTree(object):
         n_samples, n_features = np.shape(X)
 
         # 树的实际最大深度是self.max_depth+2
-        if n_samples >= self.min_samples_split and current_depth <= self.max_depth:
-            # Calculate the impurity for each feature
-            for feature_i in range(n_features):
-                # All values of feature_i
-                feature_values = np.expand_dims(X[:, feature_i], axis=1)
-                unique_values = np.unique(feature_values)
+        if n_samples < self.min_samples_split or current_depth > self.max_depth:
+            # We're at leaf => determine value
+            leaf_value = self._leaf_value_calculation(y)
 
-                # Iterate through all unique values of feature column i and
-                # calculate the impurity
-                for threshold in unique_values:
-                    # Divide X and y depending on if the feature value of X at index feature_i
-                    # meets the threshold
-                    Xy1, Xy2 = divide_on_feature(Xy, feature_i, threshold)
+            return DecisionNode(value=leaf_value)
 
-                    if len(Xy1) > 0 and len(Xy2) > 0:
-                        # Select the y-values of the two sets
-                        y1 = Xy1[:, n_features:]
-                        y2 = Xy2[:, n_features:]
+        # Calculate the impurity for each feature
+        for feature_i in range(n_features):
+            # All values of feature_i
+            feature_values = np.expand_dims(X[:, feature_i], axis=1)
+            unique_values = np.unique(feature_values)
 
-                        # Calculate impurity
-                        impurity = self._impurity_calculation(y, y1, y2)
+            # Iterate through all unique values of feature column i and
+            # calculate the impurity
+            for threshold in unique_values:
+                # Divide X and y depending on if the feature value of X at index feature_i
+                # meets the threshold
+                trueXy, falseXy = divide_on_feature(Xy, feature_i, threshold)
 
-                        # If this threshold resulted in a higher information gain than previously
-                        # recorded save the threshold value and the feature
-                        # index
-                        if impurity > largest_impurity:
-                            largest_impurity = impurity
-                            best_criteria = {"feature_i": feature_i, "threshold": threshold}
-                            best_sets = {
-                                "leftX": Xy1[:, :n_features],   # X of left subtree
-                                "lefty": Xy1[:, n_features:],   # y of left subtree
-                                "rightX": Xy2[:, :n_features],  # X of right subtree
-                                "righty": Xy2[:, n_features:]   # y of right subtree
-                                }
+                if len(trueXy) == 0 or len(falseXy) == 0:
+                    # 此时threshold为X[:, feature_i]的最大值或者最小值, 无法分裂
+                    continue
+
+                # Select the y-values of the two sets
+                y1 = trueXy[:, n_features:]
+                y2 = falseXy[:, n_features:]
+
+                # Calculate impurity
+                impurity = self._impurity_calculation(y, y1, y2)
+
+                # If this threshold resulted in a higher information gain than previously
+                # recorded save the threshold value and the feature
+                # index
+                if impurity > largest_impurity:
+                    largest_impurity = impurity
+                    best_criteria = {"feature_i": feature_i, "threshold": threshold}
+                    best_sets = {
+                        "leftX": trueXy[:, :n_features],   # X of left subtree
+                        "lefty": trueXy[:, n_features:],   # y of left subtree
+                        "rightX": falseXy[:, :n_features],  # X of right subtree
+                        "righty": falseXy[:, n_features:]   # y of right subtree
+                        }
 
         if largest_impurity > self.min_impurity:
             # Build subtrees for the right and left branches
@@ -250,8 +258,13 @@ class RegressionTree(DecisionTree):
         return sum(variance_reduction)
 
     def _mean_of_y(self, y):
+        # axis=0表示求y中每一列的平均值
+        # 这里可能有问题
         value = np.mean(y, axis=0)
-        return value if len(value) > 1 else value[0]
+        if len(value) > 1:
+            return value
+        else:
+            return value[0]
 
     def fit(self, X, y):
         self._impurity_calculation = self._calculate_variance_reduction
@@ -264,12 +277,27 @@ class ClassificationTree(DecisionTree):
         # Calculate information gain
         p = len(y1) / len(y)
         entropy = calculate_entropy(y)
-        info_gain = entropy - p * \
-            calculate_entropy(y1) - (1 - p) * \
-            calculate_entropy(y2)
+        info_gain = entropy - p * calculate_entropy(y1) - (1 - p) * calculate_entropy(y2)
 
         return info_gain
 
+    '''
+        def _majority_vote(self, y):
+            value2cnt = {}
+            most_common = None
+            max_cnt = 0
+            for value in y:
+                cnt = value2cnt.get(value, 0)
+                cnt += 1
+                value2cnt[value] = cnt
+    
+                if cnt > max_cnt:
+                    max_cnt = cnt
+                    most_common = value
+    
+            return most_common
+    '''
+    # 返回y中出现次数最多的元素
     def _majority_vote(self, y):
         most_common = None
         max_count = 0
